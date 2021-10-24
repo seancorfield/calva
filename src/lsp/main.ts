@@ -314,8 +314,23 @@ async function serverInfoCommandHandler(): Promise<void> {
     }
 }
 
+async function clojuredocsCommandHandler(): Promise<void> {
+    const client = getStateValue(LSP_CLIENT_KEY);
+    if (client) {
+        const clojuredocs = await getClojuredocs(client);
+        const calvaSaysChannel = state.outputChannel();
+        calvaSaysChannel.appendLine(`Clojuredocs:`);
+        const clojuredocsPretty = JSON.stringify(clojuredocs, null, 2);
+        calvaSaysChannel.appendLine(clojuredocsPretty);
+        calvaSaysChannel.show(true);
+    } else {
+        vscode.window.showInformationMessage('There is no clojure-lsp server running.');
+    }
+}
+
 async function activate(context: vscode.ExtensionContext): Promise<void> {
     vscode.commands.registerCommand('calva.diagnostics.clojureLspServerInfo', serverInfoCommandHandler);
+    vscode.commands.registerCommand('calva.clojuredocs', clojuredocsCommandHandler);
     const extensionPath = context.extensionPath;
     const currentVersion = readVersionFile(extensionPath);
     const userConfiguredClojureLspPath = config.getConfig().clojureLspPath;
@@ -366,6 +381,13 @@ async function getDocumentSymbols(lspClient: LanguageClient, uri: string): Promi
 
 async function getServerInfo(lspClient: LanguageClient): Promise<any> {
     return lspClient.sendRequest('clojure/serverInfo/raw');
+}
+
+async function getClojuredocs(lspClient: LanguageClient): Promise<any> {
+    return lspClient.sendRequest('clojure/clojuredocs/raw', {
+        symName: 'pprint',
+        symNs: 'clojure.core'
+    });
 }
 
 export default {
